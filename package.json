@@ -1,0 +1,14 @@
+{
+  "name": "thinkboard",
+  "version": "1.0.0",
+  "description": "A simple, fast note-taking app. A full-stack web application built on the MERN stack (MongoDB, Express, React, Node) with Upstash Redis-based rate limiting.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm install --prefix backend && npm install --include=dev --prefix frontend && npm run build --prefix frontend",
+    "start": "npm run start --prefix backend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
