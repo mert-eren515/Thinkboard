@@ -7,7 +7,7 @@ import path from "path";
 import notesRoutes from "./routes/notesRoutes.js";
 import ownersRoutes from "./routes/ownersRoutes.js";
 import { connectDB } from "./config/db.js";
-import rateLimiter from "./middleware/rateLimiter.js";
+import { apiRateLimiter, ownerRateLimiter } from "./middleware/rateLimiter.js";
 import identifyOwner from "./middleware/identifyOwner.js";
 
 dotenv.config();
@@ -20,6 +20,10 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const __dirname = path.resolve();
 
+// hosting platforms put a proxy in front of us, so without this req.ip would
+// be the proxy's address and every visitor would share one rate limit bucket
+app.set("trust proxy", 1);
+
 // middleware
 if (process.env.NODE_ENV !== "production") {
   app.use(
@@ -29,7 +33,9 @@ if (process.env.NODE_ENV !== "production") {
   );
 }
 app.use(express.json()); // this middleware will parse JSON bodies: req.body
-app.use(rateLimiter);
+
+// only the api is rate limited: static files shouldn't eat a visitor's budget
+app.use("/api", apiRateLimiter);
 
 // simple custom middleware
 app.use((req, res, next) => {
@@ -38,8 +44,13 @@ app.use((req, res, next) => {
 });
 
 // left unprotected on purpose: you can't need an owner id to be given one
-app.use("/api/owners", ownersRoutes);
+app.use("/api/owners", ownerRateLimiter, ownersRoutes);
 app.use("/api/notes", identifyOwner, notesRoutes);
+
+// an unknown api path should say so instead of falling through to index.html
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: "Not found" });
+});
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
