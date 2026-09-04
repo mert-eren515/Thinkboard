@@ -1,10 +1,16 @@
 import axios from "axios";
 
-// in production, there's no localhost so we have to make this dynamic
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001/api" : "/api";
+import { BASE_URL } from "./config.js";
+import { getOwnerId } from "./owner.js";
 
 const api = axios.create({
   baseURL: BASE_URL,
+});
+
+// every request carries the id that owns the notes
+api.interceptors.request.use(async (request) => {
+  request.headers["X-Owner-Id"] = await getOwnerId();
+  return request;
 });
 
 export default api;
